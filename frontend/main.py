@@ -53,7 +53,7 @@ def render_sidebar():
         
         # Stage descriptions
         stage_info = {
-            "1. Chat with Claude": """
+            "1. Chat with Nova": """
             **Current Focus:**
             - Basic Japanese learning
             - Understanding LLM capabilities
@@ -96,7 +96,7 @@ def render_sidebar():
 
 def render_chat_stage():
     """Render an improved chat interface"""
-    st.header("Chat with Claude")
+    st.header("Chat with Nova")
 
     # Initialize BedrockChat instance if not in session state
     if 'bedrock_chat' not in st.session_state:
@@ -104,7 +104,7 @@ def render_chat_stage():
 
     # Introduction text
     st.markdown("""
-    Start by exploring Claude's base Japanese language capabilities. Try asking questions about Japanese grammar, 
+    Start by exploring Nova's base Japanese language capabilities. Try asking questions about Japanese grammar, 
     vocabulary, or cultural aspects.
     """)
 
@@ -305,7 +305,7 @@ def main():
     selected_stage = render_sidebar()
     
     # Render appropriate stage
-    if selected_stage == "1. Chat with Claude":
+    if selected_stage == "1. Chat with Nova":
         render_chat_stage()
     elif selected_stage == "2. Raw Transcript":
         render_transcript_stage()
