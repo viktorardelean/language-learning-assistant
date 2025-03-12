@@ -3,7 +3,11 @@
 import boto3
 import streamlit as st
 from typing import Optional, Dict, Any
+import logging
 
+# Set up logging at the top of the file
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Model ID
 MODEL_ID = "amazon.nova-micro-v1:0"
@@ -36,6 +40,7 @@ class BedrockChat:
             
         except Exception as e:
             st.error(f"Error generating response: {str(e)}")
+            logger.error(f"Error generating response: {str(e)}", exc_info=True)
             return None
 
 
