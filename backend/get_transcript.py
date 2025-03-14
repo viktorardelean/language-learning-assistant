@@ -1,9 +1,11 @@
 from youtube_transcript_api import YouTubeTranscriptApi
 from typing import Optional, List, Dict
+import argparse
+import sys
 
 
 class YouTubeTranscriptDownloader:
-    def __init__(self, languages: List[str] = ["ja", "en"]):
+    def __init__(self, languages: List[str] = ["es", "en"]):
         self.languages = languages
 
     def extract_video_id(self, url: str) -> Optional[str]:
@@ -70,30 +72,48 @@ class YouTubeTranscriptDownloader:
             print(f"Error saving transcript: {str(e)}")
             return False
 
-def main(video_url, print_transcript=False):
+def main():
+    # Check if help is requested directly
+    if '--help' in sys.argv or '-h' in sys.argv:
+        print("Usage: python get_transcript.py [OPTIONS] URL")
+        print("\nOptions:")
+        print("  --print, -p    Print transcript to console")
+        print("  --help, -h     Show this help message")
+        print("\nExamples:")
+        print("  python get_transcript.py https://www.youtube.com/watch?v=VIDEO_ID")
+        print("  python get_transcript.py -p https://www.youtube.com/watch?v=VIDEO_ID")
+        return
+
+    # Set up argument parser for other cases
+    parser = argparse.ArgumentParser(description='Download YouTube video transcripts')
+    
+    # Add arguments
+    parser.add_argument('url', help='YouTube video URL')
+    parser.add_argument('--print', '-p', action='store_true', 
+                       help='Print transcript to console')
+    
+    # Parse arguments
+    args = parser.parse_args()
+    
     # Initialize downloader
     downloader = YouTubeTranscriptDownloader()
     
     # Get transcript
-    transcript = downloader.get_transcript(video_url)
-    
+    transcript = downloader.get_transcript(args.url)
     if transcript:
         # Save transcript
-        video_id = downloader.extract_video_id(video_url)
+        video_id = downloader.extract_video_id(args.url)
         if downloader.save_transcript(transcript, video_id):
             print(f"Transcript saved successfully to {video_id}.txt")
-            #Print transcript if True
-            if print_transcript:
-                # Print transcript
+            # Print transcript if --print flag is used
+            if args.print:
                 for entry in transcript:
                     print(f"{entry['text']}")
         else:
             print("Failed to save transcript")
-        
     else:
         print("Failed to get transcript")
 
 if __name__ == "__main__":
-    video_id = "https://www.youtube.com/watch?v=sY7L5cfCWno&list=PLkGU7DnOLgRMl-h4NxxrGbK-UdZHIXzKQ"  # Extract from URL: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
-    transcript = main(video_id, print_transcript=True)
+    main()
         

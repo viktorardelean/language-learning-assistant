@@ -7,11 +7,13 @@ import re
 
 from backend.chat import BedrockChat
 
+from backend.get_transcript import YouTubeTranscriptDownloader
+
 
 # Page config
 st.set_page_config(
-    page_title="Japanese Learning Assistant",
-    page_icon="🎌",
+    page_title="Spanish Learning Assistant",
+    page_icon="🇪🇸",
     layout="wide"
 )
 
@@ -23,9 +25,9 @@ if 'messages' not in st.session_state:
 
 def render_header():
     """Render the header section"""
-    st.title("🎌 Japanese Learning Assistant")
+    st.title("🇪🇸 Spanish Learning Assistant")
     st.markdown("""
-    Transform YouTube transcripts into interactive Japanese learning experiences.
+    Transform YouTube transcripts into interactive Spanish learning experiences.
     
     This tool demonstrates:
     - Base LLM Capabilities
@@ -55,7 +57,7 @@ def render_sidebar():
         stage_info = {
             "1. Chat with Nova": """
             **Current Focus:**
-            - Basic Japanese learning
+            - Basic Spanish learning
             - Understanding LLM capabilities
             - Identifying limitations
             """,
@@ -104,7 +106,7 @@ def render_chat_stage():
 
     # Introduction text
     st.markdown("""
-    Start by exploring Nova's base Japanese language capabilities. Try asking questions about Japanese grammar, 
+    Start by exploring Nova's base Spanish language capabilities. Try asking questions about Spanish grammar, 
     vocabulary, or cultural aspects.
     """)
 
@@ -118,7 +120,7 @@ def render_chat_stage():
             st.markdown(message["content"])
 
     # Chat input area
-    if prompt := st.chat_input("Ask about Japanese language..."):
+    if prompt := st.chat_input("Ask about Spanish language..."):
         # Process the user input
         process_message(prompt)
 
@@ -126,11 +128,11 @@ def render_chat_stage():
     with st.sidebar:
         st.markdown("### Try These Examples")
         example_questions = [
-            "How do I say 'Where is the train station?' in Japanese?",
-            "Explain the difference between は and が",
-            "What's the polite form of 食べる?",
-            "How do I count objects in Japanese?",
-            "What's the difference between こんにちは and こんばんは?",
+            "How do I say 'Where is the train station?' in Spanish?",
+            "Explain the difference between ser and estar",
+            "What's the difference between preterite and imperfect?",
+            "How do I conjugate irregular verbs in Spanish?",
+            "What's the difference between por and para?",
             "How do I ask for directions politely?"
         ]
         
@@ -163,19 +165,18 @@ def process_message(message: str):
 
 
 def count_characters(text):
-    """Count Japanese and total characters in text"""
+    """Count Spanish and total characters in text"""
     if not text:
         return 0, 0
         
-    def is_japanese(char):
+    def is_spanish(char):
         return any([
-            '\u4e00' <= char <= '\u9fff',  # Kanji
-            '\u3040' <= char <= '\u309f',  # Hiragana
-            '\u30a0' <= char <= '\u30ff',  # Katakana
+            char in 'áéíóúñü¿¡',
+            char.isalpha()
         ])
     
-    jp_chars = sum(1 for char in text if is_japanese(char))
-    return jp_chars, len(text)
+    sp_chars = sum(1 for char in text if is_spanish(char))
+    return sp_chars, len(text)
 
 def render_transcript_stage():
     """Render the raw transcript stage"""
@@ -184,7 +185,7 @@ def render_transcript_stage():
     # URL input
     url = st.text_input(
         "YouTube URL",
-        placeholder="Enter a Japanese lesson YouTube URL"
+        placeholder="Enter a Spanish lesson YouTube URL"
     )
     
     # Download button and processing
@@ -222,12 +223,12 @@ def render_transcript_stage():
         st.subheader("Transcript Stats")
         if st.session_state.transcript:
             # Calculate stats
-            jp_chars, total_chars = count_characters(st.session_state.transcript)
+            sp_chars, total_chars = count_characters(st.session_state.transcript)
             total_lines = len(st.session_state.transcript.split('\n'))
             
             # Display stats
             st.metric("Total Characters", total_chars)
-            st.metric("Japanese Characters", jp_chars)
+            st.metric("Spanish Characters", sp_chars)
             st.metric("Total Lines", total_lines)
         else:
             st.info("Load a transcript to see statistics")
@@ -255,7 +256,7 @@ def render_rag_stage():
     # Query input
     query = st.text_input(
         "Test Query",
-        placeholder="Enter a question about Japanese..."
+        placeholder="Enter a question about Spanish..."
     )
     
     col1, col2 = st.columns(2)
