@@ -1,14 +1,15 @@
 import streamlit as st
-from typing import Dict
+from typing import Dict, List
 import json
 from collections import Counter
 import re
-
+import difflib
+import boto3
 
 from backend.chat import BedrockChat
-
 from backend.get_transcript import YouTubeTranscriptDownloader
-
+from backend.language_learning_assistant import LanguageLearningAssistant
+from backend.rag import TranscriptVectorStore
 
 # Page config
 st.set_page_config(
@@ -275,31 +276,118 @@ def render_interactive_stage():
     """Render the interactive learning stage"""
     st.header("Interactive Learning")
     
+    # Initialize the Language Learning Assistant if not already done
+    if 'learning_assistant' not in st.session_state:
+        try:
+            st.session_state.learning_assistant = LanguageLearningAssistant()
+        except Exception as e:
+            st.error(f"Error initializing Learning Assistant: {e}")
+            return
+    
     # Practice type selection
     practice_type = st.selectbox(
-        "Select Practice Type",
-        ["Dialogue Practice", "Vocabulary Quiz", "Listening Exercise"]
+        "Select Question Type",
+        ["Comprehension", "Vocabulary", "Grammar", "Listening"],
+        help="Select the type of question you want to generate"
     )
     
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("Practice Scenario")
-        # Placeholder for scenario
-        st.info("Practice scenario will appear here")
+        st.subheader("Conversation & Question")
         
-        # Placeholder for multiple choice
-        options = ["Option 1", "Option 2", "Option 3", "Option 4"]
-        selected = st.radio("Choose your answer:", options)
+        # Generate button
+        if st.button("Generate New Question", type="primary"):
+            with st.spinner("Generating question..."):
+                try:
+                    # Generate exercise using RAG
+                    exercise = st.session_state.learning_assistant.generate_learning_exercise(
+                        practice_type.lower()
+                    )
+                    
+                    if exercise:
+                        # Store the exercise in session state
+                        st.session_state.current_exercise = exercise
+                    else:
+                        st.error("Could not generate a question. Please try again.")
+                except Exception as e:
+                    st.error(f"Error generating question: {e}")
         
+        # Display current exercise if available
+        if 'current_exercise' in st.session_state and st.session_state.current_exercise:
+            exercise = st.session_state.current_exercise
+            
+            # Display conversation context
+            st.markdown("### Conversation")
+            conversation_lines = exercise['context'].split('\n')
+            for line in conversation_lines:
+                if line.strip():
+                    # Check if it's a speaker line
+                    if ':' in line:
+                        speaker, text = line.split(':', 1)
+                        st.markdown(f"**{speaker}:** {text.strip()}")
+                    else:
+                        st.markdown(line)
+            
+            st.markdown("---")  # Divider between conversation and question
+            
+            # Display question
+            st.markdown("### Question")
+            st.markdown(f"🇪🇸 *{exercise['question']['question_spanish']}*")
+            st.markdown(f"🇬🇧 {exercise['question']['question_english']}")
+            
+            # Answer input
+            user_answer = st.text_input(
+                "Your Answer (in Spanish)",
+                key="user_answer",
+                help="Type your answer in Spanish"
+            )
+            
+            if st.button("Check Answer"):
+                if user_answer.strip():
+                    # Compare with correct answer
+                    correct_answer = exercise['question']['answer_spanish']
+                    similarity = difflib.SequenceMatcher(None, 
+                        user_answer.lower().strip(), 
+                        correct_answer.lower().strip()
+                    ).ratio()
+                    
+                    # Show result
+                    if similarity > 0.8:
+                        st.success("¡Correcto! (Correct!) 🎉")
+                    else:
+                        st.error("Not quite right. Try again! 🤔")
+                    
+                    # Show correct answer
+                    st.markdown("### Correct Answer")
+                    st.markdown(f"🇪🇸 *{exercise['question']['answer_spanish']}*")
+                    st.markdown(f"🇬🇧 {exercise['question']['answer_english']}")
+                else:
+                    st.warning("Please enter an answer first.")
+    
     with col2:
-        st.subheader("Audio")
-        # Placeholder for audio player
-        st.info("Audio will appear here")
+        st.subheader("Exercise Information")
         
-        st.subheader("Feedback")
-        # Placeholder for feedback
-        st.info("Feedback will appear here")
+        # Display metadata about the current exercise
+        if 'current_exercise' in st.session_state and st.session_state.current_exercise:
+            st.metric("Question Type", practice_type)
+            st.markdown("**Difficulty Level:** A1 (Beginner)")
+            
+            # Tips section
+            with st.expander("Tips & Hints"):
+                st.markdown("""
+                - Read the conversation carefully
+                - Pay attention to who is speaking
+                - Look for key words and phrases
+                - Consider the context
+                - Think about the type of question being asked
+                """)
+            
+            # Show conversation transcript button
+            with st.expander("Show Full Conversation"):
+                st.markdown(exercise['context'])
+        else:
+            st.info("Generate a question to get started!")
 
 def main():
     render_header()

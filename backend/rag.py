@@ -299,6 +299,34 @@ class TranscriptVectorStore:
                     except Exception as e:
                         logger.error(f"Error migrating structured file {file_path.name}: {str(e)}")
 
+    def process_transcript(self, transcript_data: Dict) -> bool:
+        """Process a single structured transcript into the vector store"""
+        try:
+            # Extract metadata
+            video_id = transcript_data.get("video_id", "unknown")
+            title = transcript_data.get("title", "")
+            
+            # Process each conversation segment
+            for segment in transcript_data.get("segments", []):
+                # Create document from segment
+                doc_id = f"{video_id}_{segment.get('id', 0)}"
+                document = segment.get("text", "")
+                metadata = {
+                    "video_id": video_id,
+                    "title": title,
+                    "segment_id": segment.get("id", 0),
+                    "start": segment.get("start", 0),
+                    "end": segment.get("end", 0)
+                }
+                
+                # Add to collection
+                self.add_document(doc_id, document, metadata)
+                
+            return True
+        except Exception as e:
+            logger.error(f"Error processing transcript: {str(e)}")
+            return False
+
 def main():
     """Main function to process all structured transcripts"""
     import argparse
