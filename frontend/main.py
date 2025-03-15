@@ -308,6 +308,9 @@ def render_interactive_stage():
                     if exercise:
                         # Store the exercise in session state
                         st.session_state.current_exercise = exercise
+                        # Reset answer state
+                        st.session_state.answer_submitted = False
+                        st.session_state.selected_answer = None
                     else:
                         st.error("Could not generate a question. Please try again.")
                 except Exception as e:
@@ -336,34 +339,55 @@ def render_interactive_stage():
             st.markdown(f"🇪🇸 *{exercise['question']['question_spanish']}*")
             st.markdown(f"🇬🇧 {exercise['question']['question_english']}")
             
-            # Answer input
-            user_answer = st.text_input(
-                "Your Answer (in Spanish)",
-                key="user_answer",
-                help="Type your answer in Spanish"
+            # Initialize session state for answer handling
+            if 'answer_submitted' not in st.session_state:
+                st.session_state.answer_submitted = False
+            if 'selected_answer' not in st.session_state:
+                st.session_state.selected_answer = None
+            
+            # Display multiple choice answers
+            answers = exercise['question']['answers']
+            
+            # Shuffle answers if not already shuffled
+            if 'shuffled_answers' not in st.session_state:
+                import random
+                st.session_state.shuffled_answers = answers.copy()
+                random.shuffle(st.session_state.shuffled_answers)
+            
+            # Display radio buttons for answers
+            selected_idx = st.radio(
+                "Choose your answer:",
+                range(len(st.session_state.shuffled_answers)),
+                format_func=lambda i: f"🇪🇸 {st.session_state.shuffled_answers[i]['text_spanish']}\n"
+                                    f"🇬🇧 {st.session_state.shuffled_answers[i]['text_english']}",
+                key="answer_radio"
             )
             
-            if st.button("Check Answer"):
-                if user_answer.strip():
-                    # Compare with correct answer
-                    correct_answer = exercise['question']['answer_spanish']
-                    similarity = difflib.SequenceMatcher(None, 
-                        user_answer.lower().strip(), 
-                        correct_answer.lower().strip()
-                    ).ratio()
-                    
-                    # Show result
-                    if similarity > 0.8:
-                        st.success("¡Correcto! (Correct!) 🎉")
-                    else:
-                        st.error("Not quite right. Try again! 🤔")
-                    
-                    # Show correct answer
-                    st.markdown("### Correct Answer")
-                    st.markdown(f"🇪🇸 *{exercise['question']['answer_spanish']}*")
-                    st.markdown(f"🇬🇧 {exercise['question']['answer_english']}")
+            # Submit button
+            if st.button("Submit Answer") and not st.session_state.answer_submitted:
+                st.session_state.answer_submitted = True
+                st.session_state.selected_answer = selected_idx
+                
+                # Check if answer is correct
+                if st.session_state.shuffled_answers[selected_idx]['is_correct']:
+                    st.success("¡Correcto! (Correct!) 🎉")
                 else:
-                    st.warning("Please enter an answer first.")
+                    st.error("Not quite right. Try again! 🤔")
+                    # Show correct answer
+                    correct_answer = next(a for a in st.session_state.shuffled_answers if a['is_correct'])
+                    st.markdown("### Correct Answer")
+                    st.markdown(f"🇪🇸 *{correct_answer['text_spanish']}*")
+                    st.markdown(f"🇬🇧 {correct_answer['text_english']}")
+            
+            # New question button (only show after submitting an answer)
+            if st.session_state.answer_submitted:
+                if st.button("Try Another Question"):
+                    # Reset states
+                    st.session_state.answer_submitted = False
+                    st.session_state.selected_answer = None
+                    if 'shuffled_answers' in st.session_state:
+                        del st.session_state.shuffled_answers
+                    st.rerun()
     
     with col2:
         st.subheader("Exercise Information")
