@@ -17,7 +17,17 @@ class TranscriptStructurer:
         """Initialize Bedrock client for transcript structuring"""
         self.bedrock_client = boto3.client('bedrock-runtime', region_name="us-east-1")
         self.model_id = model_id
-        self.transcripts_dir = "./transcripts"
+        
+        # Update paths to use the new folder structure
+        self.data_dir = "./data"
+        self.transcripts_dir = os.path.join(self.data_dir, "transcripts")
+        self.structured_dir = os.path.join(self.data_dir, "structured_transcripts")
+        
+        # Create directories if they don't exist
+        for directory in [self.data_dir, self.transcripts_dir, self.structured_dir]:
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+                logger.info(f"Created directory: {directory}")
 
     def load_transcript(self, filename: str) -> Optional[str]:
         """
@@ -62,34 +72,29 @@ class TranscriptStructurer:
         """
         prompt = f"""
         You are an expert Spanish language teacher. I have a transcript from a Spanish A1 level listening comprehension video.
-        Please analyze this transcript and structure it into three sections:
-        
-        1. Introduction - The part that introduces the lesson or topic
-        2. Conversation - The main dialogue or conversation
-        3. Questions - Any questions or exercises at the end
-        
-        For each section, provide the text and a brief analysis in English about what's happening.
-        If a section doesn't exist in the transcript, indicate that it's not present.
+        Please analyze this transcript and structure it into a JSON format with the following structure:
+
+        {{
+            "introduction": "Introduction text here",
+            "conversation": "Conversation text here",
+            "qa_pairs": [
+                {{
+                    "question": "Question 1 text here",
+                    "answer": "Answer 1 text here"
+                }},
+                {{
+                    "question": "Question 2 text here",
+                    "answer": "Answer 2 text here"
+                }},
+                ...
+            ]
+        }}
         
         Here is the transcript:
         
         {transcript_text}
         
-        Format your response as a JSON object with the following structure:
-        {{
-            "introduction": {{
-                "text": "Spanish text of introduction",
-                "analysis": "Brief analysis in English"
-            }},
-            "conversation": {{
-                "text": "Spanish text of conversation",
-                "analysis": "Brief analysis in English"
-            }},
-            "questions": {{
-                "text": "Spanish text of questions",
-                "analysis": "Brief analysis in English"
-            }}
-        }}
+        Return only the JSON object with no additional text or explanation.
         """
 
         try:
@@ -104,24 +109,19 @@ class TranscriptStructurer:
             
             response_text = response['output']['message']['content'][0]['text']
             
-            # Extract JSON from response
-            json_match = re.search(r'```json\n(.*?)\n```', response_text, re.DOTALL)
-            if json_match:
-                json_str = json_match.group(1)
-            else:
-                # Try to find JSON without markdown formatting
-                json_match = re.search(r'({.*})', response_text, re.DOTALL)
-                if json_match:
-                    json_str = json_match.group(1)
-                else:
-                    json_str = response_text
-            
-            # Clean up and parse JSON
+            # Try to parse the response as JSON
             try:
-                structured_data = json.loads(json_str)
+                # Remove any markdown code block formatting if present
+                if "```json" in response_text:
+                    response_text = response_text.split("```json")[1].split("```")[0].strip()
+                elif "```" in response_text:
+                    response_text = response_text.split("```")[1].split("```")[0].strip()
+                    
+                structured_data = json.loads(response_text)
                 return structured_data
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse JSON from response: {response_text}")
+            except json.JSONDecodeError as e:
+                logger.error(f"Error parsing JSON response: {str(e)}")
+                logger.error(f"Response text: {response_text}")
                 return None
                 
         except Exception as e:
@@ -139,8 +139,12 @@ class TranscriptStructurer:
         Returns:
             bool: True if successful, False otherwise
         """
-        output_filename = filename.replace('.txt', '_structured.json')
-        output_path = os.path.join(self.transcripts_dir, output_filename)
+        # Extract video ID from filename (remove .txt extension)
+        video_id = os.path.splitext(os.path.basename(filename))[0]
+        
+        # Create output filename without the _structured suffix
+        output_filename = f"{video_id}.json"
+        output_path = os.path.join(self.structured_dir, output_filename)
         
         try:
             with open(output_path, 'w', encoding='utf-8') as f:

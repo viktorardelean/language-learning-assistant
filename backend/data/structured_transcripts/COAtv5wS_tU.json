@@ -1,0 +1,42 @@
+{
+  "introduction": "hola soy alberto soy vuestro profesor de español ahora leo un texto dos veces primero leo el texto muy despacio vamos allá",
+  "conversation": "me llamo juan tengo 32 años vivo en barcelona trabajo de profesor en un colegio hoy es martes y ahora estoy en clase con mis alumnos en la clase hay 20 pupitres y 20 sillas y hay también 20 alumnos hay 11 chicas y 9 chicos la clase termina a las dos en punto después vuelvo a mi casa en autobús",
+  "qa_pairs": [
+    {
+      "question": "cuántos años tiene juan",
+      "answer": "juan tiene 32 años"
+    },
+    {
+      "question": "dónde vive juan",
+      "answer": "juan vive en barcelona"
+    },
+    {
+      "question": "de qué trabaja juan",
+      "answer": "juan trabaja de profesor"
+    },
+    {
+      "question": "dónde trabaja juan",
+      "answer": "juan trabaja en un colegio"
+    },
+    {
+      "question": "qué día es hoy",
+      "answer": "hoy es martes"
+    },
+    {
+      "question": "cuántas sillas hay en la clase",
+      "answer": "hay 20 sillas"
+    },
+    {
+      "question": "cuántas chicas hay en la clase",
+      "answer": "hay 11 chicas"
+    },
+    {
+      "question": "a qué hora termina la clase",
+      "answer": "la clase termina a las 2 en punto"
+    },
+    {
+      "question": "cómo vuelve juan a casa",
+      "answer": "juan vuelve en autobús"
+    }
+  ]
+}

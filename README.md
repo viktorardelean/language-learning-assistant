@@ -136,11 +136,11 @@ python structured_data.py --help
 
 ### 📌 Output Format
 
-The **structured data** is saved as JSON files in the same directory, with `_structured.json` appended to the filename:
+The **structured data** is saved as TXT files in the same directory, with `_structured.txt` appended to the filename:
 
 📁 Example output file:  
 ```
-backend/transcripts/COAtv5wS_tU_structured.json
+backend/transcripts/COAtv5wS_tU_structured.txt
 ```
 
 ### 📌 Data Structure
